@@ -1,0 +1,36 @@
+plugins {
+    id 'org.springframework.boot' version '2.4.1'
+    id 'io.spring.dependency-management' version '1.0.10.RELEASE'
+    id 'java'
+}
+
+group = 'com.otp'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // 16진수, base32로 변환
+    // https://mvnrepository.com/artifact/commons-codec/commons-codec
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.15'
+
+
+    // QR 코드 생성
+    // https://mvnrepository.com/artifact/com.google.zxing/javase
+    compile group: 'com.google.zxing', name: 'javase', version: '3.4.1'
+
+
+    // 일회용 비밀번호 생성
+    // https://mvnrepository.com/artifact/de.taimos/totp
+    compile group: 'de.taimos', name: 'totp', version: '1.0'
+}
+
+test {
+    useJUnitPlatform()
+}

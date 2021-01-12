@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTP Sample</title>
+
+    <script defer src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script>
+        const url = "http://localhost:2033/auth";
+    </script>
+
+</head>
+
+<body>
+
+<input type="password" id="otpInput">
+<button type="button" id="otpApply">Apply</button>
+
+
+<script>
+    document.getElementById('otpApply').addEventListener('click', function() {
+
+        const tryKey = document.getElementById('otpInput').value;
+
+        if(tryKey.length === 0 || tryKey === "") {
+            alert('입력값이 없습니다');
+            return;
+        }
+
+        const param = new Object();
+        param.tryKey = tryKey;
+
+        $.ajax({
+            url: url,
+            method: "POST",
+            dataType: "json",
+            data: JSON.stringify(param),
+            crossDomain: true,
+            contentType: "application/json;charset=utf-8",
+            headers: {
+                "accept": "application/json;charset=utf-8",
+                "Access-Control-Allow-Origin":"*",
+            }
+        })
+            .done(function(res) { alert(res) })
+            .fail(function(xhr, status, errorThrown) { console.log(status + ' : ' + errorThrown)})
+            .always(function() {console.log('ajax finished!')});
+
+    });
+</script>
+</body>
+
+</html>
