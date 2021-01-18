@@ -7,32 +7,78 @@
 
     <script defer src="http://code.jquery.com/jquery-latest.min.js"></script>
     <script>
-        const url = "http://localhost:2033/auth";
+        const validateURL = "http://localhost:2033/validate";
+        const registURL = "http://localhost:2033/regist";
     </script>
 
 </head>
 
 <body>
 
-<input type="password" id="otpInput">
-<button type="button" id="otpApply">Apply</button>
+<input type="text" id="company" placeholder="COMPANY ID">
+<br>
+<input type="text" id="userid" placeholder="USER ID">
+<br>
+<input type="password" id="otpInput" placeholder="OTP">
+<br>
 
+
+<button type="button" id="regist">Regist</button>
+<button type="button" id="otpApply">Verify</button>
+<br>
+<br>
+<img id="qr" src="">
 
 <script>
-    document.getElementById('otpApply').addEventListener('click', function() {
+    document.getElementById('regist').addEventListener(('click'), function() {
 
-        const tryKey = document.getElementById('otpInput').value;
+        const company = document.getElementById('company').value;
+        const userid = document.getElementById('userid').value;
 
-        if(tryKey.length === 0 || tryKey === "") {
+        if(company.length === 0 || company === "" || userid.length === 0 || userid === "") {
             alert('입력값이 없습니다');
             return;
         }
 
         const param = new Object();
+        param.company = company;
+        param.userid = userid;
+
+        $.ajax({
+            url: registURL,
+            method: "POST",
+            data: JSON.stringify(param),
+            crossDomain: true,
+            contentType: "application/json;charset=utf-8",
+            headers: {
+                "Access-Control-Allow-Origin":"*",
+            }
+        })
+            .done(function(res) { alert(res); console.log(res); })
+            .fail(function(xhr, status, errorThrown) { console.log(status + ' : ' + errorThrown)})
+            .always(function() {console.log('ajax finished!')});
+
+    });
+
+
+    document.getElementById('otpApply').addEventListener('click', function() {
+
+        const company = document.getElementById('company').value.trim();
+        const userid = document.getElementById('userid').value.trim();
+        const tryKey = document.getElementById('otpInput').value;
+
+        if(tryKey.length === 0 || tryKey === "" || company.length === 0 || company === "" || userid.length === 0 || userid === "") {
+            alert('입력값이 없습니다');
+            return;
+        }
+
+        const param = new Object();
+        param.company = company;
+        param.userid = userid;
         param.tryKey = tryKey;
 
         $.ajax({
-            url: url,
+            url: validateURL,
             method: "POST",
             dataType: "json",
             data: JSON.stringify(param),
@@ -43,11 +89,23 @@
                 "Access-Control-Allow-Origin":"*",
             }
         })
-            .done(function(res) { alert(res) })
+            .done(function(res) { alert(res); window.open(`http://localhost:2032/qr/${company}:${userid}`); })
             .fail(function(xhr, status, errorThrown) { console.log(status + ' : ' + errorThrown)})
-            .always(function() {console.log('ajax finished!')});
-
+            .always(function() {console.log('ajax finished!')})
     });
+
+
+    function gogo() {
+        $.ajax({
+            url: `http://localhost:2032/qr`,
+            method: "GET",
+            dataType: `image/png`,
+        })
+        .done(function(res) {
+            document.getElementById('qr').setAttribute('src', 'data:image/png;base64,'+ res);
+        })
+        .fail((function(xhr, status, errorThrown) { console.log(`${status} : ${errorThrown}`)}));
+    }
 </script>
 </body>
 

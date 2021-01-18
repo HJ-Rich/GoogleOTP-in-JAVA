@@ -1,29 +1,80 @@
 package com.otp.server.controller;
 
+import com.google.zxing.WriterException;
 import com.otp.server.util.OTPUtil;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 @RestController
 public class OTPController {
 
-    // 서버 키. 인증 요청이 올 때마다 서버 키 값으로 일회용 비밀번호를 생성해 요청값과 비교하는데 사용한다.
-    private static final String secretkey = "BR3WFXKBNUW7WQSAG5M6TCYSWTRJVZ3Z";
+    @Autowired
+    private ValueOperations<String, String> redis;
 
-    @PostMapping(path="/auth", produces="application/json;charset=UTF-8")
-    public boolean auth(@RequestBody String data){
+    // OTP 인증시도하는 메소드
+    @PostMapping(path="/validate", produces="application/json;charset=UTF-8")
+    public boolean validate(@RequestBody String data){
 
-        String key = OTPUtil.getTOTPCode(secretkey);
-        data = data.trim();
-        System.out.println("try key : " + data);
-        System.out.println("sec key : " + key);
-        System.out.println("검증 결과 " + data.equals(key));
+        String company = data.split(" ")[0];
+        String userid = data.split(" ")[1];
+        String tryKey = data.split(" ")[2];
 
-        // 아래는 QR코드 이미지를 생성하는 메소드 예시.
-        //String qrCode = OTPUtil.getGoogleAuthQRCode(secretkey, "Test", "SanhaIT");
-        //Util.createQRCode(qrCode, "C:\\qr\\qr.png", 200,200);
+        String validKey = OTPUtil.getTOTPCode(redis.get(company+":"+userid));
+        boolean result = tryKey.equals(validKey);
 
-        return data.equals(key);
+        System.out.println(company + " : " + userid + " : " + tryKey + " : " + validKey);
+        System.out.println("검증 결과 " + result);
+
+        return result;
     }
+
+    // 최초 OTP 등록을 위해 Redis 등록 및 QR이미지 생성하는 메소드
+    @PostMapping(path="/regist", produces="application/json;charset=UTF-8")
+    public String regist(@RequestBody String data) throws IOException, WriterException {
+
+        String company = data.split(" ")[0];
+        String userid = data.split(" ")[1];
+        String redisKey = company+":"+userid;
+
+        String secretKey = "";
+        if(redis.get(redisKey) == null) {
+            secretKey = OTPUtil.generateSecretKey();
+            redis.set(redisKey, secretKey);
+        }
+        else {
+            secretKey = redis.get(redisKey);
+        }
+
+        System.out.println("redisKey : " + redisKey);
+        System.out.println("secretKey : " + secretKey);
+
+        String qrCode = OTPUtil.getGoogleAuthenticatorBarCode(secretKey, userid, company);
+        File file = new File("src/main/resources/static/qr/"+company+userid+".png");
+        System.out.println("QR이미지 저장 경로 : " + file.getAbsolutePath());
+        OTPUtil.createQRCode(qrCode, file.getAbsolutePath(), 200,200);
+
+        return secretKey;
+    }
+
+    // QR코드 이미지를 리턴하는 메소드
+    @GetMapping(path="/qr/{redisKey}", produces = MediaType.IMAGE_PNG_VALUE)
+    public byte[] getQRImage(@PathVariable String redisKey) throws IOException {
+
+        System.out.println(redisKey);
+        if(redis.get(redisKey) == null) return null;
+
+        File file = new File("src/main/resources/static/qr/"+redisKey.replace(":", "")+".png");
+        System.out.println("요청 이미지 : " + file.getAbsolutePath());
+
+        return Files.readAllBytes(file.toPath());
+    }
+
 }
