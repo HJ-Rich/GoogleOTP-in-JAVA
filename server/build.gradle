@@ -1,7 +1,14 @@
 plugins {
     id 'org.springframework.boot' version '2.4.1'
     id 'io.spring.dependency-management' version '1.0.10.RELEASE'
-    id 'java'
+    id 'java'    
+    id "org.sonarqube" version "3.2.0"
+}
+
+sonarqube {
+  properties {
+    property "sonar.projectKey", "HJ-Rich_GoogleOTP-in-JAVA"
+  }
 }
 
 group = 'com.otp'
